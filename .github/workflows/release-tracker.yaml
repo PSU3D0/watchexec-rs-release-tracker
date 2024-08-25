@@ -15,10 +15,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - arch: "linux-x86_64"
+          - arch: "x86_64-unknown-linux-gnu"
             platform: "linux/amd64"
             tag_suffix: ""
-          - arch: "linux-x86_64-musl"
+          - arch: "x86_64-unknown-linux-musl"
             platform: "linux/amd64"
             tag_suffix: "-alpine"
     steps:
@@ -41,12 +41,40 @@ jobs:
             echo "::set-output name=exists::false"
           fi
 
-      - name: Download release asset
+      - name: Download and extract release asset
         if: steps.check_release.outputs.exists == 'false'
         run: |
-          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/${{ env.UPSTREAM_REPO }}/releases/latest | jq -r '.assets[] | select(.name | contains("${{ matrix.arch }}")) | .browser_download_url')
-          curl -L -o watchexec $DOWNLOAD_URL
+          set -e
+          echo "Starting asset download and extraction process"
+          RELEASE_DATA=$(curl -s https://api.github.com/repos/${{ env.UPSTREAM_REPO }}/releases/latest)
+          echo "Latest release data fetched"
+          DOWNLOAD_URL=$(echo $RELEASE_DATA | jq -r '.assets[] | select(.name | endswith("${{ matrix.arch }}.tar.xz")) | .browser_download_url')
+          echo "Download URL: $DOWNLOAD_URL"
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "Error: Unable to find download URL for ${{ matrix.arch }}.tar.xz"
+            echo "Available assets:"
+            echo $RELEASE_DATA | jq -r '.assets[].name'
+            exit 1
+          fi
+          echo "Downloading asset..."
+          curl -L -o release.tar.xz $DOWNLOAD_URL
+          echo "Creating extraction directory..."
+          mkdir -p extracted
+          echo "Extracting to ./extracted directory..."
+          tar -xvf release.tar.xz -C ./extracted --strip-components=1
+          echo "Extraction completed"
+          echo "Moving watchexec executable..."
+          mv ./extracted/watchexec ./watchexec
+          echo "Setting executable permissions..."
           chmod +x watchexec
+          echo "Current directory contents:"
+          ls -la
+          echo "Extracted directory contents:"
+          ls -la ./extracted
+          echo "Watchexec version:"
+          ./watchexec --version
+          echo "Asset download and extraction process completed"
+
 
       - name: Set up QEMU
         if: steps.check_release.outputs.exists == 'false'
