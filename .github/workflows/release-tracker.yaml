@@ -1,0 +1,85 @@
+name: Track Upstream Releases
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  UPSTREAM_REPO: "watchexec/watchexec"
+  IMAGE_NAME: "watchexec"
+
+jobs:
+  track-releases:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: "linux-x86_64"
+            platform: "linux/amd64"
+            tag_suffix: ""
+          - arch: "linux-x86_64-musl"
+            platform: "linux/amd64"
+            tag_suffix: "-alpine"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get latest release
+        id: latest_release
+        run: |
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/${{ env.UPSTREAM_REPO }}/releases/latest | jq -r .tag_name)
+          echo "LATEST_RELEASE=$LATEST_RELEASE" >> $GITHUB_ENV
+
+      - name: Check if release exists
+        id: check_release
+        run: |
+          if git rev-parse ${{ env.LATEST_RELEASE }} >/dev/null 2>&1; then
+            echo "Release ${{ env.LATEST_RELEASE }} already exists. Skipping."
+            echo "::set-output name=exists::true"
+          else
+            echo "::set-output name=exists::false"
+          fi
+
+      - name: Download release asset
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/${{ env.UPSTREAM_REPO }}/releases/latest | jq -r '.assets[] | select(.name | contains("${{ matrix.arch }}")) | .browser_download_url')
+          curl -L -o watchexec $DOWNLOAD_URL
+          chmod +x watchexec
+
+      - name: Set up QEMU
+        if: steps.check_release.outputs.exists == 'false'
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        if: steps.check_release.outputs.exists == 'false'
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to GitHub Container Registry
+        if: steps.check_release.outputs.exists == 'false'
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        if: steps.check_release.outputs.exists == 'false'
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile.${{ matrix.arch }}
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest${{ matrix.tag_suffix }}
+
+      - name: Create Git tag
+        if: steps.check_release.outputs.exists == 'false' && matrix.arch == 'linux-x86_64'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag ${{ env.LATEST_RELEASE }}
+          git push origin ${{ env.LATEST_RELEASE }}

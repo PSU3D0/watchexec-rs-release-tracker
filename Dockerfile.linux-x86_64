@@ -1,0 +1,3 @@
+FROM scratch
+COPY watchexec /watchexec
+ENTRYPOINT ["/watchexec"]
