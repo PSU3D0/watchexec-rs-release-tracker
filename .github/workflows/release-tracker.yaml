@@ -101,8 +101,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${GITHUB_REPOSITORY,,}:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
-            ghcr.io/${GITHUB_REPOSITORY,,}:latest${{ matrix.tag_suffix }}
+            ghcr.io/psu3d0/watchexec-rs-release-tracker:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
+            ghcr.io/psu3d0/watchexec-rs-release-tracker:latest${{ matrix.tag_suffix }}
 
       - name: Create Git tag
         if: steps.check_release.outputs.exists == 'false' && matrix.arch == 'linux-x86_64'
