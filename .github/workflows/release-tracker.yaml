@@ -17,7 +17,7 @@ jobs:
         include:
           - arch: "x86_64-unknown-linux-gnu"
             platform: "linux/amd64"
-            tag_suffix: ""
+            tag_suffix: "-x86_64"
           - arch: "x86_64-unknown-linux-musl"
             platform: "linux/amd64"
             tag_suffix: "-alpine"
@@ -103,6 +103,9 @@ jobs:
           tags: |
             ghcr.io/psu3d0/watchexec-rs-release-tracker:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
             ghcr.io/psu3d0/watchexec-rs-release-tracker:latest${{ matrix.tag_suffix }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ env.LATEST_RELEASE }}
 
       - name: Create Git tag
         if: steps.check_release.outputs.exists == 'false' && matrix.arch == 'linux-x86_64'
