@@ -7,7 +7,7 @@ on:
 
 env:
   UPSTREAM_REPO: "watchexec/watchexec"
-  IMAGE_NAME: "watchexec"
+  IMAGE_NAME: "watchexec-rs-release-tracker"
 
 jobs:
   track-releases:
@@ -101,8 +101,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest${{ matrix.tag_suffix }}
+            ghcr.io/${{ github.repository_owner | lower }}/${{ env.IMAGE_NAME | lower }}:${{ env.LATEST_RELEASE | lower }}${{ matrix.tag_suffix }}
+            ghcr.io/${{ github.repository_owner | lower }}/${{ env.IMAGE_NAME | lower }}:latest${{ matrix.tag_suffix }}
 
       - name: Create Git tag
         if: steps.check_release.outputs.exists == 'false' && matrix.arch == 'linux-x86_64'
