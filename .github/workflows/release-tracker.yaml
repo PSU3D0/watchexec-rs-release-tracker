@@ -149,50 +149,25 @@ jobs:
 
       - name: Create and push manifest
         run: |
+          # Create and push the version-specific manifest
           docker manifest create ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64 \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64-musl \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-arm64 \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-armv7 \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-ppc64le \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-s390x
-
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64 --arch amd64 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64-musl --arch amd64 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-arm64 --arch arm64 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-armv7 --arch arm --variant v7 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-ppc64le --arch ppc64le --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-s390x --arch s390x --os linux
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64 \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64-musl \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-arm64 \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-armv7 \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-ppc64le \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-s390x
 
           docker manifest push ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}
 
           # Create and push the 'latest' manifest
           docker manifest create ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64 \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64-musl \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-arm64 \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-armv7 \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-ppc64le \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-s390x
-
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64 --arch amd64 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64-musl --arch amd64 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-arm64 --arch arm64 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-armv7 --arch arm --variant v7 --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-ppc64le --arch ppc64le --os linux
-          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
-            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-s390x --arch s390x --os linux
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64 \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64-musl \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-arm64 \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-armv7 \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-ppc64le \
+            --amend ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-s390x
 
           docker manifest push ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest
 
