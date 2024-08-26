@@ -1,6 +1,0 @@
-FROM alpine:latest
-COPY watchexec /usr/local/bin/watchexec
-RUN chmod +x /usr/local/bin/watchexec && \
-    ln -s /usr/local/bin/watchexec /watchexec
-LABEL org.opencontainers.image.description="Watchexec Alpine Linux"
-ENTRYPOINT ["/usr/local/bin/watchexec"]

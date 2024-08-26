@@ -17,10 +17,34 @@ jobs:
         include:
           - arch: "x86_64-unknown-linux-gnu"
             platform: "linux/amd64"
-            tag_suffix: "-x86_64"
+            tag_suffix: "-amd64"
+            base_image: "debian:bookworm-slim"
+            description: "Watchexec x86_64 GNU/Linux"
           - arch: "x86_64-unknown-linux-musl"
             platform: "linux/amd64"
-            tag_suffix: "-alpine"
+            tag_suffix: "-amd64-musl"
+            base_image: "alpine:latest"
+            description: "Watchexec x86_64 Alpine Linux"
+          - arch: "aarch64-unknown-linux-gnu"
+            platform: "linux/arm64"
+            tag_suffix: "-arm64"
+            base_image: "debian:bookworm-slim"
+            description: "Watchexec ARM64 GNU/Linux"
+          - arch: "armv7-unknown-linux-gnueabihf"
+            platform: "linux/arm/v7"
+            tag_suffix: "-armv7"
+            base_image: "debian:bookworm-slim"
+            description: "Watchexec ARMv7 GNU/Linux"
+          - arch: "powerpc64le-unknown-linux-gnu"
+            platform: "linux/ppc64le"
+            tag_suffix: "-ppc64le"
+            base_image: "debian:bookworm-slim"
+            description: "Watchexec PowerPC64 LE GNU/Linux"
+          - arch: "s390x-unknown-linux-gnu"
+            platform: "linux/s390x"
+            tag_suffix: "-s390x"
+            base_image: "debian:bookworm-slim"
+            description: "Watchexec s390x GNU/Linux"
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -75,7 +99,6 @@ jobs:
           ./watchexec --version
           echo "Asset download and extraction process completed"
 
-
       - name: Set up QEMU
         if: steps.check_release.outputs.exists == 'false'
         uses: docker/setup-qemu-action@v1
@@ -97,18 +120,85 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: Dockerfile.${{ matrix.arch }}
+          file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/psu3d0/watchexec-rs-release-tracker:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
-            ghcr.io/psu3d0/watchexec-rs-release-tracker:latest${{ matrix.tag_suffix }}
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}${{ matrix.tag_suffix }}
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest${{ matrix.tag_suffix }}
+          build-args: |
+            BASE_IMAGE=${{ matrix.base_image }}
+            ARCH_DESCRIPTION=${{ matrix.description }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.version=${{ env.LATEST_RELEASE }}
 
+  create-manifest:
+    needs: track-releases
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest release
+        run: |
+          LATEST_RELEASE=$(curl -s https://api.github.com/repos/${{ env.UPSTREAM_REPO }}/releases/latest | jq -r .tag_name)
+          echo "LATEST_RELEASE=$LATEST_RELEASE" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          docker manifest create ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64 \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64-musl \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-arm64 \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-armv7 \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-ppc64le \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-s390x
+
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64 --arch amd64 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-amd64-musl --arch amd64 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-arm64 --arch arm64 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-armv7 --arch arm --variant v7 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-ppc64le --arch ppc64le --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }} \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}-s390x --arch s390x --os linux
+
+          docker manifest push ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:${{ env.LATEST_RELEASE }}
+
+          # Create and push the 'latest' manifest
+          docker manifest create ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64 \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64-musl \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-arm64 \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-armv7 \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-ppc64le \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-s390x
+
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64 --arch amd64 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-amd64-musl --arch amd64 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-arm64 --arch arm64 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-armv7 --arch arm --variant v7 --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-ppc64le --arch ppc64le --os linux
+          docker manifest annotate ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest \
+            ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest-s390x --arch s390x --os linux
+
+          docker manifest push ghcr.io/psu3d0/${{ env.IMAGE_NAME }}:latest
+
       - name: Create Git tag
-        if: steps.check_release.outputs.exists == 'false' && matrix.arch == 'linux-x86_64'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
