@@ -95,8 +95,6 @@ jobs:
           ls -la
           echo "Extracted directory contents:"
           ls -la ./extracted
-          echo "Watchexec version:"
-          ./watchexec --version
           echo "Asset download and extraction process completed"
 
       - name: Set up QEMU
